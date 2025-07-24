@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "alphagenome-mcp": {
+      "command": "uvx",
+      "args": ["alphagenome-mcp-stdio"],
+      "env": {
+        "ALPHAGENOME_API_KEY": "your-api-key-here",
+        "MCP_OUTPUT_DIR": "./alphagenome_output"
+      }
+    }
+  }
+} 

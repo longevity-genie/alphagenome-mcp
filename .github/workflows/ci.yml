@@ -1,0 +1,116 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.13"]
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+    
+    - name: Install dependencies
+      run: |
+        uv sync --dev
+    
+    - name: Run linting
+      run: |
+        uv run ruff check src tests
+        uv run ruff format --check src tests
+    
+    - name: Run type checking
+      run: |
+        uv run mypy src
+    
+    - name: Run unit tests
+      run: |
+        uv run pytest tests/ -m "unit or not integration" -v --tb=short
+    
+    - name: Run integration tests (if API key available)
+      env:
+        ALPHAGENOME_API_KEY: ${{ secrets.ALPHAGENOME_API_KEY }}
+      run: |
+        if [ -n "$ALPHAGENOME_API_KEY" ]; then
+          echo "Running integration tests..."
+          uv run pytest tests/ -m "integration" -v --tb=short
+        else
+          echo "Skipping integration tests (no API key available)"
+        fi
+      continue-on-error: true
+
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.13"
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+    
+    - name: Build package
+      run: |
+        uv build
+    
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: dist
+        path: dist/
+
+  test-cli:
+    runs-on: ubuntu-latest
+    needs: build
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.13"
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+    
+    - name: Download build artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: dist
+        path: dist/
+    
+    - name: Install built package
+      run: |
+        uv pip install --system dist/*.whl
+    
+    - name: Test CLI commands
+      run: |
+        alphagenome-mcp --help
+        # Test that the server can start (will fail without API key, but should show proper error)
+        timeout 10s alphagenome-mcp stdio || true 

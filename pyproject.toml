@@ -1,0 +1,71 @@
+[project]
+name = "alphagenome-mcp"
+version = "0.1.0"
+description = "MCP server for Google DeepMind's AlphaGenome genomics predictions"
+readme = "README.md"
+authors = [
+    { name = "antonkulaga", email = "antonkulaga@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "alphagenome>=0.1.0",
+    "fastmcp>=2.10.6",
+    "pycomfort>=0.0.18",
+    "typer>=0.16.0",
+    "eliot>=1.15.0",
+    "pydantic>=2.0.0",
+    "matplotlib>=3.5.0",
+]
+
+[project.scripts]
+alphagenome-mcp = "alphagenome_mcp:main"
+alphagenome-mcp-run = "alphagenome_mcp.server:cli_app_run"
+alphagenome-mcp-stdio = "alphagenome_mcp.server:cli_app_stdio_standalone"
+alphagenome-mcp-sse = "alphagenome_mcp.server:cli_app_sse_standalone"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "marimo>=0.14.13",
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "httpx>=0.24.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
+    "types-requests>=2.0.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+markers = [
+    "integration: marks tests as integration tests requiring API keys",
+    "unit: marks tests as unit tests",
+]
+
+[tool.mypy]
+python_version = "3.13"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+[[tool.mypy.overrides]]
+module = [
+    "alphagenome.*",
+    "matplotlib.*",
+    "eliot.*",
+    "fastmcp.*",
+]
+ignore_missing_imports = true
