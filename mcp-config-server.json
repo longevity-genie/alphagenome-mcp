@@ -4,7 +4,7 @@
       "url": "http://localhost:3000/sse",
       "type": "sse",
       "env": {
-        "ALPHAGENOME_API_KEY": "your-api-key-here"
+        "ALPHA_GENOME_API_KEY": "your-api-key-here"
       }
     }
   }

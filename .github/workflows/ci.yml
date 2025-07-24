@@ -39,17 +39,18 @@ jobs:
       run: |
         uv run mypy src
     
-    - name: Run unit tests
+    - name: Run tests without API key (basic validation)
       run: |
-        uv run pytest tests/ -m "unit or not integration" -v --tb=short
+        # Run tests that don't require API key (server initialization, internal validation, file operations, etc.)
+        uv run pytest tests/test_server.py::TestMCPServerInitialization::test_missing_api_key tests/test_server.py::TestInternalValidation tests/test_server.py::TestFileOperations tests/test_server.py::TestMCPTools::test_supported_output_types_structure tests/test_server.py::TestMCPTools::test_supported_organisms_structure -v --tb=short
     
     - name: Run integration tests (if API key available)
       env:
-        ALPHAGENOME_API_KEY: ${{ secrets.ALPHAGENOME_API_KEY }}
+        ALPHA_GENOME_API_KEY: ${{ secrets.ALPHA_GENOME_API_KEY }}
       run: |
-        if [ -n "$ALPHAGENOME_API_KEY" ]; then
+        if [ -n "$ALPHA_GENOME_API_KEY" ]; then
           echo "Running integration tests..."
-          uv run pytest tests/ -m "integration" -v --tb=short
+          uv run pytest tests/ -v --tb=short
         else
           echo "Skipping integration tests (no API key available)"
         fi

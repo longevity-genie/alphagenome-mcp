@@ -15,13 +15,13 @@ dependencies = [
     "eliot>=1.15.0",
     "pydantic>=2.0.0",
     "matplotlib>=3.5.0",
+    "python-dotenv>=1.0.0",
+    "pandas>=2.0.0",
+    "pyarrow>=10.0.0",
 ]
 
 [project.scripts]
 alphagenome-mcp = "alphagenome_mcp:main"
-alphagenome-mcp-run = "alphagenome_mcp.server:cli_app_run"
-alphagenome-mcp-stdio = "alphagenome_mcp.server:cli_app_stdio_standalone"
-alphagenome-mcp-sse = "alphagenome_mcp.server:cli_app_sse_standalone"
 
 [build-system]
 requires = ["hatchling"]

@@ -13,6 +13,7 @@ AlphaGenome is a unifying model for deciphering the regulatory code within DNA s
 - **Interval Predictions**: Predict genomic outputs for specific chromosomal regions
 - **Variant Analysis**: Assess functional impact of genetic variants by comparing reference vs alternate predictions
 - **Variant Scoring**: Quantify variant effects using multiple scoring methods
+- **Visualization**: Create publication-quality plots and charts from prediction data
 - **Metadata Access**: Retrieve information about available output types and organisms
 - **Validation Tools**: Validate DNA sequences and check supported parameters
 
@@ -185,16 +186,30 @@ Add the server to your MCP client configuration:
 ### Running Tests
 
 ```bash
-# Run unit tests
-uv run pytest tests/ -m "unit" -v
+# Run tests that don't require API key (model validation, etc.)
+uv run pytest tests/test_server.py::TestPredictionRequestModels tests/test_server.py::TestInternalValidation -v
 
-# Run all tests (requires API key for integration tests)
-export ALPHAGENOME_API_KEY="your_api_key"
+# Run all tests (requires API key for AlphaGenome API access)
+export ALPHA_GENOME_API_KEY="your_api_key"
 uv run pytest tests/ -v
 
 # Run with coverage
 uv run pytest tests/ --cov=alphagenome_mcp --cov-report=html
 ```
+
+### GitHub Actions CI
+
+The project includes GitHub Actions CI that:
+- Runs basic tests without API key (model validation, file operations)
+- Runs integration tests with real AlphaGenome API calls (if API key is available)
+- Performs linting, type checking, and builds the package
+
+To enable integration tests in CI, add your AlphaGenome API key as a repository secret:
+1. Go to your repository Settings → Secrets and variables → Actions
+2. Add a new secret named `ALPHA_GENOME_API_KEY`
+3. Set the value to your AlphaGenome API key
+
+The CI will automatically run on pushes and pull requests to `main` and `develop` branches.
 
 ### Code Quality
 
