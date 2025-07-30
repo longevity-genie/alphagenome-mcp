@@ -29,118 +29,331 @@ DEFAULT_OUTPUT_DIR = "alphagenome_output"
 
 
 class SequencePredictionRequest(BaseModel):
-    """Request for sequence prediction."""
+    """Request for sequence prediction using AlphaGenome model."""
 
     sequence: str = Field(
-        description="DNA sequence to predict (must contain only ACGTN)"
+        description="DNA sequence to predict (must contain only ACGTN characters). "
+                   "Supported sequence lengths: 2KB (2048bp), 16KB (16384bp), 100KB (98304bp), "
+                   "500KB (491520bp), or 1MB (983040bp). Sequences will be automatically "
+                   "resized to nearest supported length if needed."
     )
     requested_outputs: list[str] = Field(
-        description="List of output types (e.g., ['RNA_SEQ', 'DNASE'])"
+        description="List of genomic output types to predict. Available options: "
+                   "['RNA_SEQ', 'CAGE', 'DNASE', 'ATAC', 'CHIP_HISTONE', 'CHIP_TF', "
+                   "'SPLICE_SITES', 'SPLICE_SITE_USAGE', 'SPLICE_JUNCTIONS', "
+                   "'CONTACT_MAPS', 'PROCAP']. Each represents: RNA_SEQ=RNA sequencing "
+                   "gene expression tracks, CAGE=transcription start site activity, "
+                   "DNASE=chromatin accessibility via DNase hypersensitive sites, "
+                   "ATAC=chromatin accessibility via ATAC-seq, CHIP_HISTONE=histone "
+                   "modification ChIP-seq tracks, CHIP_TF=transcription factor binding "
+                   "ChIP-seq tracks, SPLICE_SITES=splice donor/acceptor sites, "
+                   "SPLICE_SITE_USAGE=splice site usage quantification, "
+                   "SPLICE_JUNCTIONS=splice junction tracks from RNA-seq, "
+                   "CONTACT_MAPS=3D chromatin interaction contact maps, "
+                   "PROCAP=Precision Run-On sequencing and capping tracks."
     )
     ontology_terms: list[str] | None = Field(
         default=None,
-        description="Ontology terms for tissue/cell types (e.g., ['UBERON:0002048'])",
+        description="Ontology terms for tissue/cell type filtering (optional). "
+                   "Use UBERON anatomical ontology terms like: ['UBERON:0002048'] for lung, "
+                   "['UBERON:0000955'] for brain, ['UBERON:0002107'] for liver, "
+                   "['UBERON:0000948'] for heart, ['UBERON:0002113'] for kidney, "
+                   "['UBERON:0002097'] for skin, ['UBERON:0002371'] for bone marrow, "
+                   "['UBERON:0000970'] for eye, ['UBERON:0001264'] for pancreas, "
+                   "['UBERON:0002106'] for spleen, ['UBERON:0001043'] for esophagus, "
+                   "['UBERON:0000945'] for stomach, ['UBERON:0001155'] for colon, "
+                   "['UBERON:0002367'] for prostate gland, ['UBERON:0000992'] for ovary, "
+                   "['UBERON:0000473'] for testis, ['UBERON:0001911'] for mammary gland, "
+                   "['UBERON:0002405'] for immune system, ['UBERON:0000006'] for islet of Langerhans. "
+                   "Multiple terms can be combined for multi-tissue analysis."
     )
     organism: str = Field(
-        default="HOMO_SAPIENS", description="Organism (HOMO_SAPIENS or MUS_MUSCULUS)"
+        default="HOMO_SAPIENS", 
+        description="Target organism for prediction. Options: 'HOMO_SAPIENS' for human "
+                   "genome analysis (GRCh38/hg38 reference), 'MUS_MUSCULUS' for mouse "
+                   "genome analysis (GRCm39/mm39 reference). Default is human."
     )
 
 
 class IntervalPredictionRequest(BaseModel):
-    """Request for interval prediction."""
+    """Request for genomic interval prediction using coordinates."""
 
-    chromosome: str = Field(description="Chromosome name (e.g., 'chr1')")
-    start: int = Field(description="Start position (0-based)")
-    end: int = Field(description="End position (0-based, exclusive)")
-    strand: str = Field(default="POSITIVE", description="Strand (POSITIVE or NEGATIVE)")
-    requested_outputs: list[str] = Field(description="List of output types")
-    ontology_terms: list[str] | None = Field(
-        default=None, description="Ontology terms for tissue/cell types"
+    chromosome: str = Field(
+        description="Chromosome identifier (e.g., 'chr1', 'chr2', ..., 'chr22', 'chrX', 'chrY', 'chrM'). "
+                   "For human: use 'chr1' through 'chr22' for autosomes, 'chrX', 'chrY' for sex chromosomes, "
+                   "'chrM' for mitochondrial DNA. For mouse: use 'chr1' through 'chr19', 'chrX', 'chrY', 'chrM'."
     )
-    organism: str = Field(default="HOMO_SAPIENS", description="Organism")
+    start: int = Field(
+        description="Start position in base pairs (0-based coordinates, inclusive). "
+                   "This follows standard genomic coordinates where the first base is position 0. "
+                   "Example: for the interval chr1:1000-2000, start=999 (0-based)."
+    )
+    end: int = Field(
+        description="End position in base pairs (0-based coordinates, exclusive). "
+                   "The interval includes bases from start up to but not including end. "
+                   "Example: for chr1:1000-2000, end=2000. Interval length = end - start."
+    )
+    strand: str = Field(
+        default="POSITIVE", 
+        description="DNA strand orientation. Options: 'POSITIVE' for forward/plus strand (+), "
+                   "'NEGATIVE' for reverse/minus strand (-). Affects prediction orientation "
+                   "for strand-specific outputs like gene expression and transcription factor binding."
+    )
+    requested_outputs: list[str] = Field(
+        description="List of genomic output types to predict. Available options: "
+                   "['RNA_SEQ', 'CAGE', 'DNASE', 'ATAC', 'CHIP_HISTONE', 'CHIP_TF', "
+                   "'SPLICE_SITES', 'SPLICE_SITE_USAGE', 'SPLICE_JUNCTIONS', "
+                   "'CONTACT_MAPS', 'PROCAP']. See SequencePredictionRequest for detailed descriptions."
+    )
+    ontology_terms: list[str] | None = Field(
+        default=None, 
+        description="UBERON ontology terms for tissue/cell type filtering (optional). "
+                   "Examples: ['UBERON:0002048'] for lung, ['UBERON:0000955'] for brain, "
+                   "['UBERON:0002107'] for liver, ['UBERON:0000948'] for heart. "
+                   "See SequencePredictionRequest for comprehensive list of available terms."
+    )
+    organism: str = Field(
+        default="HOMO_SAPIENS", 
+        description="Target organism. Options: 'HOMO_SAPIENS' (human GRCh38/hg38), "
+                   "'MUS_MUSCULUS' (mouse GRCm39/mm39). Default is human."
+    )
 
 
 class VariantPredictionRequest(BaseModel):
-    """Request for variant prediction."""
+    """Request for genetic variant impact prediction comparing reference vs alternate alleles."""
 
-    chromosome: str = Field(description="Chromosome name for both interval and variant")
-    interval_start: int = Field(description="Interval start position (0-based)")
-    interval_end: int = Field(description="Interval end position (0-based, exclusive)")
-    variant_position: int = Field(description="Variant position (1-based)")
-    reference_bases: str = Field(description="Reference bases at variant position")
-    alternate_bases: str = Field(description="Alternate bases for the variant")
-    requested_outputs: list[str] = Field(description="List of output types")
-    ontology_terms: list[str] | None = Field(default=None, description="Ontology terms")
-    organism: str = Field(default="HOMO_SAPIENS", description="Organism")
+    chromosome: str = Field(
+        description="Chromosome identifier for both interval and variant (e.g., 'chr1', 'chr2', etc.). "
+                   "Must be the same chromosome for both the genomic interval and the variant position."
+    )
+    interval_start: int = Field(
+        description="Genomic interval start position (0-based coordinates, inclusive). "
+                   "This defines the analysis window around the variant. The interval should "
+                   "contain the variant position and sufficient flanking sequence for context. "
+                   "Typical intervals range from 16KB to 1MB depending on analysis needs."
+    )
+    interval_end: int = Field(
+        description="Genomic interval end position (0-based coordinates, exclusive). "
+                   "Must be greater than interval_start and should encompass the variant_position. "
+                   "Interval length = interval_end - interval_start."
+    )
+    variant_position: int = Field(
+        description="Variant genomic position (1-based coordinates). This is the exact "
+                   "position of the genetic variant within the specified interval. "
+                   "Must satisfy: interval_start < variant_position-1 < interval_end. "
+                   "Example: for variant at chr1:1000, use variant_position=1000."
+    )
+    reference_bases: str = Field(
+        description="Reference allele bases at the variant position (uppercase DNA sequence). "
+                   "For SNVs: single nucleotide like 'A', 'T', 'G', 'C'. "
+                   "For insertions: '-' or empty string. "
+                   "For deletions: the deleted sequence like 'ATG'. "
+                   "For substitutions: the original sequence like 'CAT'."
+    )
+    alternate_bases: str = Field(
+        description="Alternate allele bases for the variant (uppercase DNA sequence). "
+                   "For SNVs: single nucleotide like 'G' (if reference is 'A'). "
+                   "For insertions: the inserted sequence like 'ATCG'. "
+                   "For deletions: '-' or empty string. "
+                   "For substitutions: the replacement sequence like 'GTC'."
+    )
+    requested_outputs: list[str] = Field(
+        description="List of genomic output types to compare between reference and alternate. "
+                   "Available options: ['RNA_SEQ', 'CAGE', 'DNASE', 'ATAC', 'CHIP_HISTONE', "
+                   "'CHIP_TF', 'SPLICE_SITES', 'SPLICE_SITE_USAGE', 'SPLICE_JUNCTIONS', "
+                   "'CONTACT_MAPS', 'PROCAP']. Each output will be predicted for both "
+                   "reference and alternate sequences to assess variant impact."
+    )
+    ontology_terms: list[str] | None = Field(
+        default=None, 
+        description="UBERON ontology terms for tissue-specific variant impact analysis (optional). "
+                   "Examples: ['UBERON:0002048'] for lung-specific effects, "
+                   "['UBERON:0000955'] for brain-specific effects. "
+                   "See SequencePredictionRequest for comprehensive ontology term list."
+    )
+    organism: str = Field(
+        default="HOMO_SAPIENS", 
+        description="Target organism for variant analysis. Options: 'HOMO_SAPIENS' (human), "
+                   "'MUS_MUSCULUS' (mouse). Default is human."
+    )
 
 
 class VariantScoringRequest(BaseModel):
-    """Request for variant scoring."""
+    """Request for variant pathogenicity and functional impact scoring."""
 
-    chromosome: str = Field(description="Chromosome name")
-    interval_start: int = Field(description="Interval start position (0-based)")
-    interval_end: int = Field(description="Interval end position (0-based, exclusive)")
-    variant_position: int = Field(description="Variant position (1-based)")
-    reference_bases: str = Field(description="Reference bases")
-    alternate_bases: str = Field(description="Alternate bases")
-    variant_scorers: list[str] | None = Field(
-        default=None, description="Variant scorer names (use recommended if None)"
+    chromosome: str = Field(
+        description="Chromosome identifier (e.g., 'chr1', 'chr2', etc.). "
+                   "Same chromosome for both interval and variant position."
     )
-    organism: str = Field(default="HOMO_SAPIENS", description="Organism")
+    interval_start: int = Field(
+        description="Analysis interval start position (0-based coordinates, inclusive). "
+                   "Defines the genomic window for variant scoring context."
+    )
+    interval_end: int = Field(
+        description="Analysis interval end position (0-based coordinates, exclusive). "
+                   "Must encompass the variant position for proper scoring context."
+    )
+    variant_position: int = Field(
+        description="Variant genomic position (1-based coordinates). Exact position "
+                   "of the genetic variant to be scored for functional impact."
+    )
+    reference_bases: str = Field(
+        description="Reference allele DNA sequence (uppercase). Examples: 'A' for SNV, "
+                   "'ATG' for deletion, '-' for insertion reference."
+    )
+    alternate_bases: str = Field(
+        description="Alternate allele DNA sequence (uppercase). Examples: 'T' for SNV, "
+                   "'-' for deletion, 'GCAT' for insertion."
+    )
+    variant_scorers: list[str] | None = Field(
+        default=None, 
+        description="List of variant scoring algorithms to apply (optional). "
+                   "If None, uses AlphaGenome's recommended set of scorers. "
+                   "Available scorers typically include pathogenicity prediction, "
+                   "conservation scoring, functional impact assessment, and "
+                   "tissue-specific effect quantification. Each scorer provides "
+                   "different insights into variant consequences."
+    )
+    organism: str = Field(
+        default="HOMO_SAPIENS", 
+        description="Target organism for scoring. Options: 'HOMO_SAPIENS' (human), "
+                   "'MUS_MUSCULUS' (mouse). Default is human."
+    )
 
 
 class VisualizationRequest(BaseModel):
-    """Request for prediction visualization."""
+    """Request for creating visualizations from AlphaGenome prediction data."""
 
     plot_type: str = Field(
-        description="Type of plot (tracks, variant_comparison, contact_map)"
+        description="Type of visualization to create. Available options: "
+                   "'tracks' for genomic signal track plots (RNA-seq, ATAC-seq, etc.), "
+                   "'variant_comparison' for side-by-side reference vs alternate comparison plots, "
+                   "'contact_map' for 3D chromatin interaction heatmaps, "
+                   "'splice_sites' for splice site prediction visualization, "
+                   "'multi_track' for combining multiple output types in one plot."
     )
-    title: str | None = Field(default=None, description="Plot title")
-    width: int = Field(default=12, description="Figure width in inches")
-    height: int = Field(default=8, description="Figure height in inches")
+    title: str | None = Field(
+        default=None, 
+        description="Custom plot title (optional). If None, auto-generates title based on "
+                   "plot_type and data content. Example: 'AlphaGenome RNA-seq Prediction chr1:1000-2000'"
+    )
+    width: int = Field(
+        default=12, 
+        description="Figure width in inches (default: 12). Recommended ranges: "
+                   "8-12 for single tracks, 12-16 for multi-track plots, "
+                   "10-14 for variant comparisons, 8-10 for contact maps."
+    )
+    height: int = Field(
+        default=8, 
+        description="Figure height in inches (default: 8). Recommended ranges: "
+                   "6-8 for single tracks, 8-12 for multi-track plots, "
+                   "6-10 for variant comparisons, 8-10 for contact maps."
+    )
 
 
 class PredictionResult(BaseModel):
-    """Result from a prediction."""
+    """Result from AlphaGenome sequence or interval prediction containing file paths and metadata."""
 
     output_files: dict[str, dict[str, str]] = Field(
-        description="File paths for prediction outputs by type and format (npz, parquet, plot)"
+        description="Nested dictionary of prediction output files organized by output type and format. "
+                   "Structure: {output_type: {format: filepath}}. "
+                   "Output types include: 'RNA_SEQ', 'CAGE', 'DNASE', 'ATAC', 'CHIP_HISTONE', etc. "
+                   "Formats include: 'npz' (compressed NumPy arrays for Python), "
+                   "'parquet' (Apache Arrow/Parquet for modern data workflows), "
+                   "'plot' (PNG visualization files). "
+                   "Example: {'RNA_SEQ': {'npz': '/path/to/rna_seq.npz', 'parquet': '/path/to/rna_seq.parquet', 'plot': '/path/to/rna_seq_plot.png'}}"
     )
-    metadata_file: str = Field(description="Path to metadata JSON file")
+    metadata_file: str = Field(
+        description="Path to JSON metadata file containing prediction parameters, sequence information, "
+                   "output type details, ontology terms used, organism, timestamps, and other "
+                   "contextual information for reproducibility and analysis interpretation."
+    )
     interval: dict[str, Any] | None = Field(
-        default=None, description="Genomic interval if applicable"
+        default=None, 
+        description="Genomic interval information if applicable (for interval predictions). "
+                   "Contains: 'chromosome' (e.g., 'chr1'), 'start' (0-based), 'end' (0-based exclusive), "
+                   "'strand' ('POSITIVE' or 'NEGATIVE'), 'width' (interval length in bp). "
+                   "None for sequence-only predictions."
     )
 
 
 class VariantResult(BaseModel):
-    """Result from variant prediction."""
+    """Result from variant impact prediction comparing reference vs alternate alleles."""
 
-    reference_file: str = Field(description="Path to reference predictions file")
-    alternate_file: str = Field(description="Path to alternate predictions file")
-    metadata_file: str = Field(description="Path to metadata JSON file")
-    variant: dict[str, Any] = Field(description="Variant information")
-    interval: dict[str, Any] = Field(description="Genomic interval")
+    reference_file: str = Field(
+        description="Path to JSON file containing all reference allele prediction files. "
+                   "Contains nested dictionary with output types and their file paths in multiple formats "
+                   "(npz, parquet, plot) for the reference sequence."
+    )
+    alternate_file: str = Field(
+        description="Path to JSON file containing all alternate allele prediction files. "
+                   "Contains nested dictionary with output types and their file paths in multiple formats "
+                   "(npz, parquet, plot) for the alternate sequence."
+    )
+    metadata_file: str = Field(
+        description="Path to JSON metadata file containing variant details, interval information, "
+                   "prediction parameters, organism, output types, and analysis context for "
+                   "reproducibility and interpretation of variant impact results."
+    )
+    variant: dict[str, Any] = Field(
+        description="Variant information dictionary containing: 'chromosome' (e.g., 'chr1'), "
+                   "'position' (1-based genomic coordinate), 'reference_bases' (ref allele sequence), "
+                   "'alternate_bases' (alt allele sequence), 'is_snv' (boolean indicating single nucleotide variant)."
+    )
+    interval: dict[str, Any] = Field(
+        description="Genomic interval context dictionary containing: 'chromosome', 'start' (0-based), "
+                   "'end' (0-based exclusive), 'width' (interval length in bp) defining the "
+                   "analysis window around the variant."
+    )
 
 
 class ScoringResult(BaseModel):
-    """Result from variant scoring."""
+    """Result from variant pathogenicity and functional impact scoring analysis."""
 
-    scores_file: str = Field(description="Path to scoring results file")
-    metadata_file: str = Field(description="Path to metadata JSON file")
-    variant: dict[str, Any] = Field(description="Variant information")
-    interval: dict[str, Any] = Field(description="Genomic interval")
+    scores_file: str = Field(
+        description="Path to JSON file listing all variant scoring result files. "
+                   "Contains 'score_files' array with paths to H5AD (AnnData) files from different scorers, "
+                   "and 'scorer_count' indicating number of scoring algorithms applied. "
+                   "Each H5AD file contains detailed scoring matrices and annotations."
+    )
+    metadata_file: str = Field(
+        description="Path to JSON metadata file containing scoring parameters, variant details, "
+                   "interval context, scorer information, organism, and analysis settings "
+                   "for reproducibility and interpretation of scoring results."
+    )
+    variant: dict[str, Any] = Field(
+        description="Variant information dictionary with keys: 'chromosome', 'position' (1-based), "
+                   "'reference_bases', 'alternate_bases', 'is_snv' (boolean for single nucleotide variants). "
+                   "Defines the exact genetic variant that was scored for functional impact."
+    )
+    interval: dict[str, Any] = Field(
+        description="Analysis interval dictionary containing: 'chromosome', 'start' (0-based), "
+                   "'end' (0-based exclusive), 'width' (bp) defining the genomic context "
+                   "window used for variant scoring analysis."
+    )
 
 
 class VisualizationResult(BaseModel):
-    """Result from visualization."""
+    """Result from AlphaGenome prediction data visualization."""
 
     image_data: str | None = Field(
-        default=None, description="Base64 encoded PNG image (if requested)"
+        default=None, 
+        description="Base64 encoded PNG image data for immediate display or embedding. "
+                   "Encoded in UTF-8 string format, can be decoded and displayed directly "
+                   "in web interfaces or notebooks. None if only file output was requested."
     )
     image_path: str | None = Field(
-        default=None, description="Path to saved image file (if saved)"
+        default=None, 
+        description="Filesystem path to saved PNG image file. High-resolution (300 DPI) "
+                   "publication-quality image suitable for reports, papers, or presentations. "
+                   "None if only base64 output was requested."
     )
-    plot_info: dict[str, Any] = Field(description="Information about the plot")
+    plot_info: dict[str, Any] = Field(
+        description="Comprehensive plot metadata dictionary containing: 'plot_type' (visualization type), "
+                   "'title' (plot title), 'width'/'height' (dimensions in inches), 'timestamp' (creation time), "
+                   "'filename' (generated filename), 'file_size_mb' (image file size), 'dpi' (resolution), "
+                   "and other plot-specific parameters for documentation and reproducibility."
+    )
 
 
 class AlphaGenomeMCP(FastMCP):
@@ -365,16 +578,38 @@ class AlphaGenomeMCP(FastMCP):
         @self.tool(
             name=f"{self.prefix}predict_sequence",
             description="""
-        Generate AlphaGenome predictions for a DNA sequence.
+        Generate comprehensive AlphaGenome genomic predictions for a raw DNA sequence.
 
-        Supports sequences of length 2KB, 16KB, 100KB, 500KB, or 1MB.
-        Available output types: RNA_SEQ, CAGE, DNASE, ATAC, CHIP_HISTONE, CHIP_TF,
-        SPLICE_SITES, SPLICE_SITE_USAGE, SPLICE_JUNCTIONS, CONTACT_MAPS, PROCAP.
+        SEQUENCE REQUIREMENTS:
+        - Must contain only valid DNA nucleotides: A, C, G, T, N
+        - Supported lengths: 2KB (2048bp), 16KB (16384bp), 100KB (98304bp), 500KB (491520bp), 1MB (983040bp)
+        - Sequences automatically resized to nearest supported length if needed
+        - Case-insensitive input (automatically converted to uppercase)
 
-        Use ontology terms like 'UBERON:0002048' (lung) or 'UBERON:0000955' (brain)
-        to filter predictions to specific tissues/cell types.
+        AVAILABLE OUTPUT TYPES (select one or more):
+        - RNA_SEQ: RNA sequencing gene expression tracks
+        - CAGE: Cap Analysis Gene Expression transcription start sites
+        - DNASE: DNase I hypersensitive sites for chromatin accessibility
+        - ATAC: Assay for Transposase-Accessible Chromatin accessibility
+        - CHIP_HISTONE: ChIP-seq histone modification tracks (H3K4me3, H3K27ac, etc.)
+        - CHIP_TF: ChIP-seq transcription factor binding sites
+        - SPLICE_SITES: Splice donor and acceptor site predictions
+        - SPLICE_SITE_USAGE: Quantitative splice site usage metrics
+        - SPLICE_JUNCTIONS: RNA-seq derived splice junction tracks
+        - CONTACT_MAPS: 3D chromatin interaction contact frequency maps
+        - PROCAP: Precision Run-On sequencing and capping analysis
 
-        Results are saved to files and file paths are returned due to large data sizes.
+        TISSUE/CELL TYPE FILTERING:
+        Use UBERON ontology terms for tissue-specific predictions:
+        Common examples: UBERON:0002048 (lung), UBERON:0000955 (brain), UBERON:0002107 (liver),
+        UBERON:0000948 (heart), UBERON:0002113 (kidney), UBERON:0002097 (skin)
+
+        OUTPUT FORMAT:
+        Returns file paths due to large data sizes. Each output type generates:
+        - NPZ: Compressed NumPy arrays for Python analysis
+        - Parquet: Apache Arrow format for modern data workflows
+        - PNG: Auto-generated visualization plots
+        - JSON: Comprehensive metadata for reproducibility
         """,
         )
         def predict_sequence(request: SequencePredictionRequest) -> PredictionResult:
@@ -433,13 +668,36 @@ class AlphaGenomeMCP(FastMCP):
         @self.tool(
             name=f"{self.prefix}predict_interval",
             description="""
-        Generate AlphaGenome predictions for a genomic interval.
+        Generate AlphaGenome predictions for a specific genomic interval using coordinates.
 
-        Specify chromosome, start, and end positions to predict genomic outputs
-        for a specific region. The interval will be automatically resized to
-        the nearest supported sequence length if needed.
+        COORDINATE SYSTEM:
+        - Uses 0-based, half-open intervals [start, end)
+        - start: inclusive 0-based position
+        - end: exclusive 0-based position  
+        - Interval length = end - start
+        - Example: chr1:1000-2000 → start=999, end=2000 (1000bp interval)
 
-        Results are saved to files and file paths are returned due to large data sizes.
+        CHROMOSOME FORMAT:
+        - Human: chr1, chr2, ..., chr22, chrX, chrY, chrM (GRCh38/hg38)
+        - Mouse: chr1, chr2, ..., chr19, chrX, chrY, chrM (GRCm39/mm39)
+
+        STRAND SPECIFICATION:
+        - POSITIVE: Forward/plus strand (+), typical for most analyses
+        - NEGATIVE: Reverse/minus strand (-), important for strand-specific outputs
+
+        AUTOMATIC RESIZING:
+        Intervals automatically adjusted to nearest supported sequence length:
+        2KB, 16KB, 100KB, 500KB, or 1MB for optimal model performance.
+
+        OUTPUT TYPES AND TISSUE FILTERING:
+        Same as predict_sequence tool - supports all genomic output types
+        (RNA_SEQ, CAGE, DNASE, ATAC, etc.) with optional UBERON ontology filtering.
+
+        USE CASES:
+        - Analyze specific gene loci or regulatory regions
+        - Study chromatin accessibility in defined intervals
+        - Examine transcription factor binding in promoter regions
+        - Investigate 3D chromatin interactions in TAD boundaries
         """,
         )
         def predict_interval(request: IntervalPredictionRequest) -> PredictionResult:
@@ -520,13 +778,38 @@ class AlphaGenomeMCP(FastMCP):
         @self.tool(
             name=f"{self.prefix}predict_variant",
             description="""
-        Generate AlphaGenome predictions for a genomic variant.
+        Generate comparative AlphaGenome predictions for genetic variant impact analysis.
 
-        Compares predictions between reference and alternate alleles to assess
-        the functional impact of a genetic variant. Returns both reference
-        and alternate predictions for comparison.
+        VARIANT IMPACT ANALYSIS:
+        Predicts genomic outputs for both reference and alternate alleles to quantify
+        functional consequences of genetic variants. Essential for understanding
+        how mutations affect gene expression, chromatin accessibility, and regulatory function.
 
-        Results are saved to files and file paths are returned due to large data sizes.
+        COORDINATE REQUIREMENTS:
+        - interval_start/end: 0-based genomic window containing the variant
+        - variant_position: 1-based exact variant location
+        - Must satisfy: interval_start < variant_position-1 < interval_end
+        - Recommended interval size: 16KB-1MB for sufficient context
+
+        VARIANT TYPES SUPPORTED:
+        - SNVs (Single Nucleotide Variants): ref='A', alt='T'
+        - Insertions: ref='-' or '', alt='ATCG'
+        - Deletions: ref='ATG', alt='-' or ''
+        - Complex substitutions: ref='CAT', alt='GTC'
+
+        ANALYSIS WORKFLOW:
+        1. Extracts reference sequence from specified interval
+        2. Creates alternate sequence by applying variant
+        3. Predicts all requested outputs for both sequences
+        4. Returns separate file sets for reference vs alternate
+        5. Enables direct comparison of predicted functional impacts
+
+        CLINICAL APPLICATIONS:
+        - Assess pathogenicity of disease-associated variants
+        - Predict regulatory effects of non-coding variants
+        - Evaluate splice site disruption potential
+        - Quantify transcription factor binding changes
+        - Study chromatin accessibility alterations
         """,
         )
         def predict_variant(request: VariantPredictionRequest) -> VariantResult:
@@ -647,13 +930,40 @@ class AlphaGenomeMCP(FastMCP):
         @self.tool(
             name=f"{self.prefix}score_variant",
             description="""
-        Score a genomic variant using AlphaGenome variant scorers.
+        Compute comprehensive pathogenicity and functional impact scores for genetic variants.
 
-        Applies different scoring methods to quantify the predicted impact
-        of a genetic variant. Returns scores from multiple scorers for
-        comprehensive variant assessment.
+        SCORING METHODOLOGY:
+        Applies multiple machine learning-based scoring algorithms to quantify
+        variant functional consequences. Each scorer provides different insights
+        into potential pathogenic effects and regulatory impacts.
 
-        Results are saved to files and file paths are returned due to large data sizes.
+        SCORING ALGORITHMS (when available):
+        - Pathogenicity prediction: Likelihood of disease-causing effects
+        - Conservation scoring: Evolutionary constraint assessment  
+        - Functional impact: Regulatory and transcriptional effects
+        - Tissue-specific effects: Context-dependent impact quantification
+        - Splice site disruption: Effects on RNA splicing patterns
+        - Protein function: Coding variant consequence prediction
+
+        RECOMMENDED USAGE:
+        Use score_variant for rapid pathogenicity assessment, especially when:
+        - Screening large variant sets for prioritization
+        - Clinical variant interpretation workflows
+        - Population genetics studies
+        - Functional annotation of GWAS hits
+        - Pharmacogenomics variant assessment
+
+        OUTPUT FORMAT:
+        Returns AnnData (H5AD) files containing:
+        - Multi-dimensional scoring matrices
+        - Detailed variant annotations
+        - Confidence metrics and uncertainty estimates
+        - Cross-reference to external databases
+        - Tissue/cell-type specific score breakdowns
+
+        COMPARISON WITH predict_variant:
+        - score_variant: Fast, summary-level pathogenicity scores
+        - predict_variant: Detailed mechanistic predictions for specific outputs
         """,
         )
         def score_variant(request: VariantScoringRequest) -> ScoringResult:
@@ -759,10 +1069,30 @@ class AlphaGenomeMCP(FastMCP):
         @self.tool(
             name=f"{self.prefix}get_metadata",
             description="""
-        Get metadata about available AlphaGenome outputs and ontology terms.
+        Retrieve comprehensive metadata about AlphaGenome model capabilities and configurations.
 
-        Returns information about supported output types, available tissues/cell types,
-        and other model metadata for the specified organism.
+        METADATA CONTENT:
+        - Supported organisms: Human (HOMO_SAPIENS) and Mouse (MUS_MUSCULUS)
+        - Available output types: Complete list of predictable genomic features
+        - Sequence length requirements: Supported input sizes (2KB to 1MB)
+        - Track count information: Number of available tracks per output type
+        - Model version and capability details
+        - Reference genome information (GRCh38/hg38, GRCm39/mm39)
+
+        ORGANISM-SPECIFIC DETAILS:
+        Returns organism-specific metadata including:
+        - ATAC-seq track counts and tissue coverage
+        - RNA-seq experiment availability and cell type diversity
+        - DNase-seq track numbers and tissue representation
+        - ChIP-seq data availability for histone marks and transcription factors
+        - Contact map resolution and genomic coverage
+
+        USE CASES:
+        - Validate tool compatibility before analysis
+        - Understand model capabilities and limitations
+        - Plan experiments based on available data types
+        - Check organism-specific feature availability
+        - Estimate computational requirements
         """,
         )
         def get_metadata(organism: str = "HOMO_SAPIENS") -> dict[str, Any]:
@@ -795,10 +1125,35 @@ class AlphaGenomeMCP(FastMCP):
         @self.tool(
             name=f"{self.prefix}get_supported_outputs",
             description="""
-        Get list of supported AlphaGenome output types.
+        Retrieve detailed catalog of all available AlphaGenome genomic output types.
 
-        Returns all available output types that can be requested from AlphaGenome,
-        along with descriptions of what each output represents.
+        COMPREHENSIVE OUTPUT CATALOG:
+        Returns structured information for each supported output type:
+        
+        EXPRESSION & TRANSCRIPTION:
+        - RNA_SEQ: RNA sequencing gene expression tracks
+        - CAGE: Cap Analysis Gene Expression (transcription start sites)
+        - PROCAP: Precision Run-On sequencing and capping
+        
+        CHROMATIN ACCESSIBILITY:
+        - DNASE: DNase I hypersensitive sites
+        - ATAC: Assay for Transposase-Accessible Chromatin
+        
+        PROTEIN-DNA INTERACTIONS:
+        - CHIP_HISTONE: ChIP-seq histone modification tracks
+        - CHIP_TF: ChIP-seq transcription factor binding sites
+        
+        RNA PROCESSING:
+        - SPLICE_SITES: Splice donor and acceptor site predictions
+        - SPLICE_SITE_USAGE: Quantitative splice site usage
+        - SPLICE_JUNCTIONS: RNA-seq splice junction tracks
+        
+        3D GENOME ORGANIZATION:
+        - CONTACT_MAPS: Chromatin interaction contact frequency maps
+
+        RETURN FORMAT:
+        Each output type includes name, detailed description, and biological significance
+        for informed selection in prediction requests.
         """,
         )
         def get_supported_outputs() -> dict[str, Any]:
@@ -833,9 +1188,31 @@ class AlphaGenomeMCP(FastMCP):
         @self.tool(
             name=f"{self.prefix}get_supported_organisms",
             description="""
-        Get list of supported organisms for AlphaGenome predictions.
+        Retrieve information about organisms supported by AlphaGenome models.
 
-        Returns all organisms that AlphaGenome can make predictions for.
+        SUPPORTED ORGANISMS:
+        
+        HOMO_SAPIENS (Human):
+        - Reference genome: GRCh38/hg38
+        - Chromosomes: chr1-chr22, chrX, chrY, chrM
+        - Comprehensive training data from diverse tissues/cell types
+        - Extensive validation on clinical and population genetics datasets
+        - Optimized for medical genomics and variant interpretation
+        
+        MUS_MUSCULUS (Mouse):
+        - Reference genome: GRCm39/mm39  
+        - Chromosomes: chr1-chr19, chrX, chrY, chrM
+        - Model organism with extensive experimental validation
+        - Valuable for comparative genomics and model system studies
+        - Cross-species validation and evolutionary analysis
+
+        RETURN FORMAT:
+        Each organism entry includes:
+        - Standard name and identifier
+        - Reference genome version
+        - Chromosome complement
+        - Model training details
+        - Recommended use cases
         """,
         )
         def get_supported_organisms() -> dict[str, Any]:
@@ -852,11 +1229,55 @@ class AlphaGenomeMCP(FastMCP):
         @self.tool(
             name=f"{self.prefix}visualize_prediction",
             description="""
-        Create visualization plots from prediction data files.
+        Generate publication-quality visualizations from AlphaGenome prediction data.
 
-        Takes prediction output files (NPZ format) and creates publication-quality plots
-        showing genomic tracks, variant comparisons, or other visualization types.
-        Saves plots as PNG files and optionally returns base64 encoded image data.
+        VISUALIZATION TYPES:
+
+        TRACKS:
+        - Single or multi-track genomic signal plots
+        - Time-series style line plots with filled areas
+        - Automatic scaling and statistical annotations
+        - Genomic coordinate labeling and interval context
+        - Ideal for RNA-seq, ATAC-seq, ChIP-seq visualization
+
+        VARIANT_COMPARISON:
+        - Side-by-side reference vs alternate allele comparison
+        - Bar plots showing differential predictions
+        - Quantitative impact assessment with value labels
+        - Statistical significance indicators
+        - Perfect for variant impact interpretation
+
+        CONTACT_MAP:
+        - Heatmap visualization of 3D chromatin interactions
+        - Symmetric contact frequency matrices
+        - Color-coded interaction strength
+        - Genomic bin position labeling
+        - Essential for TAD and loop analysis
+
+        SPLICE_SITES:
+        - Splice donor/acceptor site probability tracks
+        - Exon-intron boundary visualization
+        - Alternative splicing pattern display
+        - Junction strength quantification
+
+        MULTI_TRACK:
+        - Combined visualization of multiple output types
+        - Vertically stacked track arrangement
+        - Shared genomic coordinate system
+        - Cross-track correlation analysis
+
+        OUTPUT FORMATS:
+        - High-resolution PNG (300 DPI) for publications
+        - Base64 encoded data for web integration
+        - Customizable dimensions and styling
+        - Comprehensive metadata for reproducibility
+
+        STYLING FEATURES:
+        - Professional scientific plotting aesthetics
+        - Automatic color scheme selection
+        - Statistical summary annotations (mean, max, min)
+        - Genomic interval context information
+        - Legend and axis labeling
         """,
         )
         def visualize_prediction(request: VisualizationRequest) -> VisualizationResult:
