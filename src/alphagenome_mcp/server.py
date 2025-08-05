@@ -16,6 +16,8 @@ from eliot import start_action
 from fastmcp import FastMCP
 from pydantic import BaseModel, Field
 
+from alphagenome_mcp.core import AlphaGenomeConfig, AlphaGenomeCore
+
 # Load environment variables
 load_dotenv()
 
@@ -33,45 +35,45 @@ class SequencePredictionRequest(BaseModel):
 
     sequence: str = Field(
         description="DNA sequence to predict (must contain only ACGTN characters). "
-                   "Supported sequence lengths: 2KB (2048bp), 16KB (16384bp), 100KB (98304bp), "
-                   "500KB (491520bp), or 1MB (983040bp). Sequences will be automatically "
-                   "resized to nearest supported length if needed."
+        "Supported sequence lengths: 2KB (2048bp), 16KB (16384bp), 100KB (98304bp), "
+        "500KB (491520bp), or 1MB (983040bp). Sequences will be automatically "
+        "resized to nearest supported length if needed."
     )
     requested_outputs: list[str] = Field(
         description="List of genomic output types to predict. Available options: "
-                   "['RNA_SEQ', 'CAGE', 'DNASE', 'ATAC', 'CHIP_HISTONE', 'CHIP_TF', "
-                   "'SPLICE_SITES', 'SPLICE_SITE_USAGE', 'SPLICE_JUNCTIONS', "
-                   "'CONTACT_MAPS', 'PROCAP']. Each represents: RNA_SEQ=RNA sequencing "
-                   "gene expression tracks, CAGE=transcription start site activity, "
-                   "DNASE=chromatin accessibility via DNase hypersensitive sites, "
-                   "ATAC=chromatin accessibility via ATAC-seq, CHIP_HISTONE=histone "
-                   "modification ChIP-seq tracks, CHIP_TF=transcription factor binding "
-                   "ChIP-seq tracks, SPLICE_SITES=splice donor/acceptor sites, "
-                   "SPLICE_SITE_USAGE=splice site usage quantification, "
-                   "SPLICE_JUNCTIONS=splice junction tracks from RNA-seq, "
-                   "CONTACT_MAPS=3D chromatin interaction contact maps, "
-                   "PROCAP=Precision Run-On sequencing and capping tracks."
+        "['RNA_SEQ', 'CAGE', 'DNASE', 'ATAC', 'CHIP_HISTONE', 'CHIP_TF', "
+        "'SPLICE_SITES', 'SPLICE_SITE_USAGE', 'SPLICE_JUNCTIONS', "
+        "'CONTACT_MAPS', 'PROCAP']. Each represents: RNA_SEQ=RNA sequencing "
+        "gene expression tracks, CAGE=transcription start site activity, "
+        "DNASE=chromatin accessibility via DNase hypersensitive sites, "
+        "ATAC=chromatin accessibility via ATAC-seq, CHIP_HISTONE=histone "
+        "modification ChIP-seq tracks, CHIP_TF=transcription factor binding "
+        "ChIP-seq tracks, SPLICE_SITES=splice donor/acceptor sites, "
+        "SPLICE_SITE_USAGE=splice site usage quantification, "
+        "SPLICE_JUNCTIONS=splice junction tracks from RNA-seq, "
+        "CONTACT_MAPS=3D chromatin interaction contact maps, "
+        "PROCAP=Precision Run-On sequencing and capping tracks."
     )
     ontology_terms: list[str] | None = Field(
         default=None,
         description="Ontology terms for tissue/cell type filtering (optional). "
-                   "Use UBERON anatomical ontology terms like: ['UBERON:0002048'] for lung, "
-                   "['UBERON:0000955'] for brain, ['UBERON:0002107'] for liver, "
-                   "['UBERON:0000948'] for heart, ['UBERON:0002113'] for kidney, "
-                   "['UBERON:0002097'] for skin, ['UBERON:0002371'] for bone marrow, "
-                   "['UBERON:0000970'] for eye, ['UBERON:0001264'] for pancreas, "
-                   "['UBERON:0002106'] for spleen, ['UBERON:0001043'] for esophagus, "
-                   "['UBERON:0000945'] for stomach, ['UBERON:0001155'] for colon, "
-                   "['UBERON:0002367'] for prostate gland, ['UBERON:0000992'] for ovary, "
-                   "['UBERON:0000473'] for testis, ['UBERON:0001911'] for mammary gland, "
-                   "['UBERON:0002405'] for immune system, ['UBERON:0000006'] for islet of Langerhans. "
-                   "Multiple terms can be combined for multi-tissue analysis."
+        "Use UBERON anatomical ontology terms like: ['UBERON:0002048'] for lung, "
+        "['UBERON:0000955'] for brain, ['UBERON:0002107'] for liver, "
+        "['UBERON:0000948'] for heart, ['UBERON:0002113'] for kidney, "
+        "['UBERON:0002097'] for skin, ['UBERON:0002371'] for bone marrow, "
+        "['UBERON:0000970'] for eye, ['UBERON:0001264'] for pancreas, "
+        "['UBERON:0002106'] for spleen, ['UBERON:0001043'] for esophagus, "
+        "['UBERON:0000945'] for stomach, ['UBERON:0001155'] for colon, "
+        "['UBERON:0002367'] for prostate gland, ['UBERON:0000992'] for ovary, "
+        "['UBERON:0000473'] for testis, ['UBERON:0001911'] for mammary gland, "
+        "['UBERON:0002405'] for immune system, ['UBERON:0000006'] for islet of Langerhans. "
+        "Multiple terms can be combined for multi-tissue analysis.",
     )
     organism: str = Field(
-        default="HOMO_SAPIENS", 
+        default="HOMO_SAPIENS",
         description="Target organism for prediction. Options: 'HOMO_SAPIENS' for human "
-                   "genome analysis (GRCh38/hg38 reference), 'MUS_MUSCULUS' for mouse "
-                   "genome analysis (GRCm39/mm39 reference). Default is human."
+        "genome analysis (GRCh38/hg38 reference), 'MUS_MUSCULUS' for mouse "
+        "genome analysis (GRCm39/mm39 reference). Default is human.",
     )
 
 
@@ -80,42 +82,42 @@ class IntervalPredictionRequest(BaseModel):
 
     chromosome: str = Field(
         description="Chromosome identifier (e.g., 'chr1', 'chr2', ..., 'chr22', 'chrX', 'chrY', 'chrM'). "
-                   "For human: use 'chr1' through 'chr22' for autosomes, 'chrX', 'chrY' for sex chromosomes, "
-                   "'chrM' for mitochondrial DNA. For mouse: use 'chr1' through 'chr19', 'chrX', 'chrY', 'chrM'."
+        "For human: use 'chr1' through 'chr22' for autosomes, 'chrX', 'chrY' for sex chromosomes, "
+        "'chrM' for mitochondrial DNA. For mouse: use 'chr1' through 'chr19', 'chrX', 'chrY', 'chrM'."
     )
     start: int = Field(
         description="Start position in base pairs (0-based coordinates, inclusive). "
-                   "This follows standard genomic coordinates where the first base is position 0. "
-                   "Example: for the interval chr1:1000-2000, start=999 (0-based)."
+        "This follows standard genomic coordinates where the first base is position 0. "
+        "Example: for the interval chr1:1000-2000, start=999 (0-based)."
     )
     end: int = Field(
         description="End position in base pairs (0-based coordinates, exclusive). "
-                   "The interval includes bases from start up to but not including end. "
-                   "Example: for chr1:1000-2000, end=2000. Interval length = end - start."
+        "The interval includes bases from start up to but not including end. "
+        "Example: for chr1:1000-2000, end=2000. Interval length = end - start."
     )
     strand: str = Field(
-        default="POSITIVE", 
+        default="POSITIVE",
         description="DNA strand orientation. Options: 'POSITIVE' for forward/plus strand (+), "
-                   "'NEGATIVE' for reverse/minus strand (-). Affects prediction orientation "
-                   "for strand-specific outputs like gene expression and transcription factor binding."
+        "'NEGATIVE' for reverse/minus strand (-). Affects prediction orientation "
+        "for strand-specific outputs like gene expression and transcription factor binding.",
     )
     requested_outputs: list[str] = Field(
         description="List of genomic output types to predict. Available options: "
-                   "['RNA_SEQ', 'CAGE', 'DNASE', 'ATAC', 'CHIP_HISTONE', 'CHIP_TF', "
-                   "'SPLICE_SITES', 'SPLICE_SITE_USAGE', 'SPLICE_JUNCTIONS', "
-                   "'CONTACT_MAPS', 'PROCAP']. See SequencePredictionRequest for detailed descriptions."
+        "['RNA_SEQ', 'CAGE', 'DNASE', 'ATAC', 'CHIP_HISTONE', 'CHIP_TF', "
+        "'SPLICE_SITES', 'SPLICE_SITE_USAGE', 'SPLICE_JUNCTIONS', "
+        "'CONTACT_MAPS', 'PROCAP']. See SequencePredictionRequest for detailed descriptions."
     )
     ontology_terms: list[str] | None = Field(
-        default=None, 
+        default=None,
         description="UBERON ontology terms for tissue/cell type filtering (optional). "
-                   "Examples: ['UBERON:0002048'] for lung, ['UBERON:0000955'] for brain, "
-                   "['UBERON:0002107'] for liver, ['UBERON:0000948'] for heart. "
-                   "See SequencePredictionRequest for comprehensive list of available terms."
+        "Examples: ['UBERON:0002048'] for lung, ['UBERON:0000955'] for brain, "
+        "['UBERON:0002107'] for liver, ['UBERON:0000948'] for heart. "
+        "See SequencePredictionRequest for comprehensive list of available terms.",
     )
     organism: str = Field(
-        default="HOMO_SAPIENS", 
+        default="HOMO_SAPIENS",
         description="Target organism. Options: 'HOMO_SAPIENS' (human GRCh38/hg38), "
-                   "'MUS_MUSCULUS' (mouse GRCm39/mm39). Default is human."
+        "'MUS_MUSCULUS' (mouse GRCm39/mm39). Default is human.",
     )
 
 
@@ -124,57 +126,57 @@ class VariantPredictionRequest(BaseModel):
 
     chromosome: str = Field(
         description="Chromosome identifier for both interval and variant (e.g., 'chr1', 'chr2', etc.). "
-                   "Must be the same chromosome for both the genomic interval and the variant position."
+        "Must be the same chromosome for both the genomic interval and the variant position."
     )
     interval_start: int = Field(
         description="Genomic interval start position (0-based coordinates, inclusive). "
-                   "This defines the analysis window around the variant. The interval should "
-                   "contain the variant position and sufficient flanking sequence for context. "
-                   "Typical intervals range from 16KB to 1MB depending on analysis needs."
+        "This defines the analysis window around the variant. The interval should "
+        "contain the variant position and sufficient flanking sequence for context. "
+        "Typical intervals range from 16KB to 1MB depending on analysis needs."
     )
     interval_end: int = Field(
         description="Genomic interval end position (0-based coordinates, exclusive). "
-                   "Must be greater than interval_start and should encompass the variant_position. "
-                   "Interval length = interval_end - interval_start."
+        "Must be greater than interval_start and should encompass the variant_position. "
+        "Interval length = interval_end - interval_start."
     )
     variant_position: int = Field(
         description="Variant genomic position (1-based coordinates). This is the exact "
-                   "position of the genetic variant within the specified interval. "
-                   "Must satisfy: interval_start < variant_position-1 < interval_end. "
-                   "Example: for variant at chr1:1000, use variant_position=1000."
+        "position of the genetic variant within the specified interval. "
+        "Must satisfy: interval_start < variant_position-1 < interval_end. "
+        "Example: for variant at chr1:1000, use variant_position=1000."
     )
     reference_bases: str = Field(
         description="Reference allele bases at the variant position (uppercase DNA sequence). "
-                   "For SNVs: single nucleotide like 'A', 'T', 'G', 'C'. "
-                   "For insertions: '-' or empty string. "
-                   "For deletions: the deleted sequence like 'ATG'. "
-                   "For substitutions: the original sequence like 'CAT'."
+        "For SNVs: single nucleotide like 'A', 'T', 'G', 'C'. "
+        "For insertions: '-' or empty string. "
+        "For deletions: the deleted sequence like 'ATG'. "
+        "For substitutions: the original sequence like 'CAT'."
     )
     alternate_bases: str = Field(
         description="Alternate allele bases for the variant (uppercase DNA sequence). "
-                   "For SNVs: single nucleotide like 'G' (if reference is 'A'). "
-                   "For insertions: the inserted sequence like 'ATCG'. "
-                   "For deletions: '-' or empty string. "
-                   "For substitutions: the replacement sequence like 'GTC'."
+        "For SNVs: single nucleotide like 'G' (if reference is 'A'). "
+        "For insertions: the inserted sequence like 'ATCG'. "
+        "For deletions: '-' or empty string. "
+        "For substitutions: the replacement sequence like 'GTC'."
     )
     requested_outputs: list[str] = Field(
         description="List of genomic output types to compare between reference and alternate. "
-                   "Available options: ['RNA_SEQ', 'CAGE', 'DNASE', 'ATAC', 'CHIP_HISTONE', "
-                   "'CHIP_TF', 'SPLICE_SITES', 'SPLICE_SITE_USAGE', 'SPLICE_JUNCTIONS', "
-                   "'CONTACT_MAPS', 'PROCAP']. Each output will be predicted for both "
-                   "reference and alternate sequences to assess variant impact."
+        "Available options: ['RNA_SEQ', 'CAGE', 'DNASE', 'ATAC', 'CHIP_HISTONE', "
+        "'CHIP_TF', 'SPLICE_SITES', 'SPLICE_SITE_USAGE', 'SPLICE_JUNCTIONS', "
+        "'CONTACT_MAPS', 'PROCAP']. Each output will be predicted for both "
+        "reference and alternate sequences to assess variant impact."
     )
     ontology_terms: list[str] | None = Field(
-        default=None, 
+        default=None,
         description="UBERON ontology terms for tissue-specific variant impact analysis (optional). "
-                   "Examples: ['UBERON:0002048'] for lung-specific effects, "
-                   "['UBERON:0000955'] for brain-specific effects. "
-                   "See SequencePredictionRequest for comprehensive ontology term list."
+        "Examples: ['UBERON:0002048'] for lung-specific effects, "
+        "['UBERON:0000955'] for brain-specific effects. "
+        "See SequencePredictionRequest for comprehensive ontology term list.",
     )
     organism: str = Field(
-        default="HOMO_SAPIENS", 
+        default="HOMO_SAPIENS",
         description="Target organism for variant analysis. Options: 'HOMO_SAPIENS' (human), "
-                   "'MUS_MUSCULUS' (mouse). Default is human."
+        "'MUS_MUSCULUS' (mouse). Default is human.",
     )
 
 
@@ -183,41 +185,41 @@ class VariantScoringRequest(BaseModel):
 
     chromosome: str = Field(
         description="Chromosome identifier (e.g., 'chr1', 'chr2', etc.). "
-                   "Same chromosome for both interval and variant position."
+        "Same chromosome for both interval and variant position."
     )
     interval_start: int = Field(
         description="Analysis interval start position (0-based coordinates, inclusive). "
-                   "Defines the genomic window for variant scoring context."
+        "Defines the genomic window for variant scoring context."
     )
     interval_end: int = Field(
         description="Analysis interval end position (0-based coordinates, exclusive). "
-                   "Must encompass the variant position for proper scoring context."
+        "Must encompass the variant position for proper scoring context."
     )
     variant_position: int = Field(
         description="Variant genomic position (1-based coordinates). Exact position "
-                   "of the genetic variant to be scored for functional impact."
+        "of the genetic variant to be scored for functional impact."
     )
     reference_bases: str = Field(
         description="Reference allele DNA sequence (uppercase). Examples: 'A' for SNV, "
-                   "'ATG' for deletion, '-' for insertion reference."
+        "'ATG' for deletion, '-' for insertion reference."
     )
     alternate_bases: str = Field(
         description="Alternate allele DNA sequence (uppercase). Examples: 'T' for SNV, "
-                   "'-' for deletion, 'GCAT' for insertion."
+        "'-' for deletion, 'GCAT' for insertion."
     )
     variant_scorers: list[str] | None = Field(
-        default=None, 
+        default=None,
         description="List of variant scoring algorithms to apply (optional). "
-                   "If None, uses AlphaGenome's recommended set of scorers. "
-                   "Available scorers typically include pathogenicity prediction, "
-                   "conservation scoring, functional impact assessment, and "
-                   "tissue-specific effect quantification. Each scorer provides "
-                   "different insights into variant consequences."
+        "If None, uses AlphaGenome's recommended set of scorers. "
+        "Available scorers typically include pathogenicity prediction, "
+        "conservation scoring, functional impact assessment, and "
+        "tissue-specific effect quantification. Each scorer provides "
+        "different insights into variant consequences.",
     )
     organism: str = Field(
-        default="HOMO_SAPIENS", 
+        default="HOMO_SAPIENS",
         description="Target organism for scoring. Options: 'HOMO_SAPIENS' (human), "
-                   "'MUS_MUSCULUS' (mouse). Default is human."
+        "'MUS_MUSCULUS' (mouse). Default is human.",
     )
 
 
@@ -226,28 +228,28 @@ class VisualizationRequest(BaseModel):
 
     plot_type: str = Field(
         description="Type of visualization to create. Available options: "
-                   "'tracks' for genomic signal track plots (RNA-seq, ATAC-seq, etc.), "
-                   "'variant_comparison' for side-by-side reference vs alternate comparison plots, "
-                   "'contact_map' for 3D chromatin interaction heatmaps, "
-                   "'splice_sites' for splice site prediction visualization, "
-                   "'multi_track' for combining multiple output types in one plot."
+        "'tracks' for genomic signal track plots (RNA-seq, ATAC-seq, etc.), "
+        "'variant_comparison' for side-by-side reference vs alternate comparison plots, "
+        "'contact_map' for 3D chromatin interaction heatmaps, "
+        "'splice_sites' for splice site prediction visualization, "
+        "'multi_track' for combining multiple output types in one plot."
     )
     title: str | None = Field(
-        default=None, 
+        default=None,
         description="Custom plot title (optional). If None, auto-generates title based on "
-                   "plot_type and data content. Example: 'AlphaGenome RNA-seq Prediction chr1:1000-2000'"
+        "plot_type and data content. Example: 'AlphaGenome RNA-seq Prediction chr1:1000-2000'",
     )
     width: int = Field(
-        default=12, 
+        default=12,
         description="Figure width in inches (default: 12). Recommended ranges: "
-                   "8-12 for single tracks, 12-16 for multi-track plots, "
-                   "10-14 for variant comparisons, 8-10 for contact maps."
+        "8-12 for single tracks, 12-16 for multi-track plots, "
+        "10-14 for variant comparisons, 8-10 for contact maps.",
     )
     height: int = Field(
-        default=8, 
+        default=8,
         description="Figure height in inches (default: 8). Recommended ranges: "
-                   "6-8 for single tracks, 8-12 for multi-track plots, "
-                   "6-10 for variant comparisons, 8-10 for contact maps."
+        "6-8 for single tracks, 8-12 for multi-track plots, "
+        "6-10 for variant comparisons, 8-10 for contact maps.",
     )
 
 
@@ -256,24 +258,24 @@ class PredictionResult(BaseModel):
 
     output_files: dict[str, dict[str, str]] = Field(
         description="Nested dictionary of prediction output files organized by output type and format. "
-                   "Structure: {output_type: {format: filepath}}. "
-                   "Output types include: 'RNA_SEQ', 'CAGE', 'DNASE', 'ATAC', 'CHIP_HISTONE', etc. "
-                   "Formats include: 'npz' (compressed NumPy arrays for Python), "
-                   "'parquet' (Apache Arrow/Parquet for modern data workflows), "
-                   "'plot' (PNG visualization files). "
-                   "Example: {'RNA_SEQ': {'npz': '/path/to/rna_seq.npz', 'parquet': '/path/to/rna_seq.parquet', 'plot': '/path/to/rna_seq_plot.png'}}"
+        "Structure: {output_type: {format: filepath}}. "
+        "Output types include: 'RNA_SEQ', 'CAGE', 'DNASE', 'ATAC', 'CHIP_HISTONE', etc. "
+        "Formats include: 'npz' (compressed NumPy arrays for Python), "
+        "'parquet' (Apache Arrow/Parquet for modern data workflows), "
+        "'plot' (PNG visualization files). "
+        "Example: {'RNA_SEQ': {'npz': '/path/to/rna_seq.npz', 'parquet': '/path/to/rna_seq.parquet', 'plot': '/path/to/rna_seq_plot.png'}}"
     )
     metadata_file: str = Field(
         description="Path to JSON metadata file containing prediction parameters, sequence information, "
-                   "output type details, ontology terms used, organism, timestamps, and other "
-                   "contextual information for reproducibility and analysis interpretation."
+        "output type details, ontology terms used, organism, timestamps, and other "
+        "contextual information for reproducibility and analysis interpretation."
     )
     interval: dict[str, Any] | None = Field(
-        default=None, 
+        default=None,
         description="Genomic interval information if applicable (for interval predictions). "
-                   "Contains: 'chromosome' (e.g., 'chr1'), 'start' (0-based), 'end' (0-based exclusive), "
-                   "'strand' ('POSITIVE' or 'NEGATIVE'), 'width' (interval length in bp). "
-                   "None for sequence-only predictions."
+        "Contains: 'chromosome' (e.g., 'chr1'), 'start' (0-based), 'end' (0-based exclusive), "
+        "'strand' ('POSITIVE' or 'NEGATIVE'), 'width' (interval length in bp). "
+        "None for sequence-only predictions.",
     )
 
 
@@ -282,28 +284,28 @@ class VariantResult(BaseModel):
 
     reference_file: str = Field(
         description="Path to JSON file containing all reference allele prediction files. "
-                   "Contains nested dictionary with output types and their file paths in multiple formats "
-                   "(npz, parquet, plot) for the reference sequence."
+        "Contains nested dictionary with output types and their file paths in multiple formats "
+        "(npz, parquet, plot) for the reference sequence."
     )
     alternate_file: str = Field(
         description="Path to JSON file containing all alternate allele prediction files. "
-                   "Contains nested dictionary with output types and their file paths in multiple formats "
-                   "(npz, parquet, plot) for the alternate sequence."
+        "Contains nested dictionary with output types and their file paths in multiple formats "
+        "(npz, parquet, plot) for the alternate sequence."
     )
     metadata_file: str = Field(
         description="Path to JSON metadata file containing variant details, interval information, "
-                   "prediction parameters, organism, output types, and analysis context for "
-                   "reproducibility and interpretation of variant impact results."
+        "prediction parameters, organism, output types, and analysis context for "
+        "reproducibility and interpretation of variant impact results."
     )
     variant: dict[str, Any] = Field(
         description="Variant information dictionary containing: 'chromosome' (e.g., 'chr1'), "
-                   "'position' (1-based genomic coordinate), 'reference_bases' (ref allele sequence), "
-                   "'alternate_bases' (alt allele sequence), 'is_snv' (boolean indicating single nucleotide variant)."
+        "'position' (1-based genomic coordinate), 'reference_bases' (ref allele sequence), "
+        "'alternate_bases' (alt allele sequence), 'is_snv' (boolean indicating single nucleotide variant)."
     )
     interval: dict[str, Any] = Field(
         description="Genomic interval context dictionary containing: 'chromosome', 'start' (0-based), "
-                   "'end' (0-based exclusive), 'width' (interval length in bp) defining the "
-                   "analysis window around the variant."
+        "'end' (0-based exclusive), 'width' (interval length in bp) defining the "
+        "analysis window around the variant."
     )
 
 
@@ -312,24 +314,24 @@ class ScoringResult(BaseModel):
 
     scores_file: str = Field(
         description="Path to JSON file listing all variant scoring result files. "
-                   "Contains 'score_files' array with paths to H5AD (AnnData) files from different scorers, "
-                   "and 'scorer_count' indicating number of scoring algorithms applied. "
-                   "Each H5AD file contains detailed scoring matrices and annotations."
+        "Contains 'score_files' array with paths to H5AD (AnnData) files from different scorers, "
+        "and 'scorer_count' indicating number of scoring algorithms applied. "
+        "Each H5AD file contains detailed scoring matrices and annotations."
     )
     metadata_file: str = Field(
         description="Path to JSON metadata file containing scoring parameters, variant details, "
-                   "interval context, scorer information, organism, and analysis settings "
-                   "for reproducibility and interpretation of scoring results."
+        "interval context, scorer information, organism, and analysis settings "
+        "for reproducibility and interpretation of scoring results."
     )
     variant: dict[str, Any] = Field(
         description="Variant information dictionary with keys: 'chromosome', 'position' (1-based), "
-                   "'reference_bases', 'alternate_bases', 'is_snv' (boolean for single nucleotide variants). "
-                   "Defines the exact genetic variant that was scored for functional impact."
+        "'reference_bases', 'alternate_bases', 'is_snv' (boolean for single nucleotide variants). "
+        "Defines the exact genetic variant that was scored for functional impact."
     )
     interval: dict[str, Any] = Field(
         description="Analysis interval dictionary containing: 'chromosome', 'start' (0-based), "
-                   "'end' (0-based exclusive), 'width' (bp) defining the genomic context "
-                   "window used for variant scoring analysis."
+        "'end' (0-based exclusive), 'width' (bp) defining the genomic context "
+        "window used for variant scoring analysis."
     )
 
 
@@ -337,22 +339,22 @@ class VisualizationResult(BaseModel):
     """Result from AlphaGenome prediction data visualization."""
 
     image_data: str | None = Field(
-        default=None, 
+        default=None,
         description="Base64 encoded PNG image data for immediate display or embedding. "
-                   "Encoded in UTF-8 string format, can be decoded and displayed directly "
-                   "in web interfaces or notebooks. None if only file output was requested."
+        "Encoded in UTF-8 string format, can be decoded and displayed directly "
+        "in web interfaces or notebooks. None if only file output was requested.",
     )
     image_path: str | None = Field(
-        default=None, 
+        default=None,
         description="Filesystem path to saved PNG image file. High-resolution (300 DPI) "
-                   "publication-quality image suitable for reports, papers, or presentations. "
-                   "None if only base64 output was requested."
+        "publication-quality image suitable for reports, papers, or presentations. "
+        "None if only base64 output was requested.",
     )
     plot_info: dict[str, Any] = Field(
         description="Comprehensive plot metadata dictionary containing: 'plot_type' (visualization type), "
-                   "'title' (plot title), 'width'/'height' (dimensions in inches), 'timestamp' (creation time), "
-                   "'filename' (generated filename), 'file_size_mb' (image file size), 'dpi' (resolution), "
-                   "and other plot-specific parameters for documentation and reproducibility."
+        "'title' (plot title), 'width'/'height' (dimensions in inches), 'timestamp' (creation time), "
+        "'filename' (generated filename), 'file_size_mb' (image file size), 'dpi' (resolution), "
+        "and other plot-specific parameters for documentation and reproducibility."
     )
 
 
@@ -364,213 +366,55 @@ class AlphaGenomeMCP(FastMCP):
         name: str = "AlphaGenome MCP Server",
         prefix: str = "alphagenome_",
         output_dir: str | None = None,
+        config: AlphaGenomeConfig | None = None,
         **kwargs,
     ):
         """Initialize the AlphaGenome tools with FastMCP functionality."""
         super().__init__(name=name, **kwargs)
 
         self.prefix = prefix
-        # Follow gget-mcp pattern: default to current directory + output folder
-        self.output_dir = (
-            Path(output_dir) if output_dir else Path.cwd() / DEFAULT_OUTPUT_DIR
-        )
-        self.output_dir.mkdir(parents=True, exist_ok=True)
-        self._client = None  # Lazy initialization
 
-        # Get API key from environment
-        self.api_key = os.getenv("ALPHA_GENOME_API_KEY")
-        if not self.api_key:
-            raise ValueError("ALPHA_GENOME_API_KEY environment variable is required")
+        # Create or use provided configuration
+        if config is None:
+            config = AlphaGenomeConfig.from_env(
+                output_dir=output_dir or DEFAULT_OUTPUT_DIR
+            )
+
+        # Initialize core functionality
+        self.core = AlphaGenomeCore(config)
+        self.output_dir = self.core.config.output_dir.resolve()  # For backward compatibility - ensure absolute path
 
         # Register our tools
         self._register_alphagenome_tools()
 
+    @property
+    def api_key(self) -> str:
+        """Get the API key from configuration (for backward compatibility)."""
+        return self.core.config.api_key
+
     def _get_client(self) -> dna_client.DnaClient:
-        """Get or create AlphaGenome client."""
-        if self._client is None:
-            with start_action(action_type="create_alphagenome_client"):
-                self._client = dna_client.create(self.api_key)
-        return self._client
+        """Get or create AlphaGenome client (delegate to core)."""
+        return self.core.get_client()
 
     def _validate_sequence(self, sequence: str) -> dict[str, Any]:
-        """Internal function to validate a DNA sequence for AlphaGenome prediction."""
-        # Check valid characters
-        valid_chars = set("ACGTN")
-        sequence_chars = set(sequence.upper())
-        invalid_chars = sequence_chars - valid_chars
+        """Validate a DNA sequence (delegate to core)."""
+        return self.core.validate_sequence(sequence)
 
-        # Check length
-        length = len(sequence)
-        supported_lengths = list(dna_client.SUPPORTED_SEQUENCE_LENGTHS.values())
-        is_supported_length = length in supported_lengths
-
-        # Find closest supported length
-        closest_length = min(supported_lengths, key=lambda x: abs(x - length))
-
-        validation_result = {
-            "sequence_length": length,
-            "valid_characters": len(invalid_chars) == 0,
-            "invalid_characters": list(invalid_chars) if invalid_chars else [],
-            "supported_length": is_supported_length,
-            "supported_lengths": supported_lengths,
-            "closest_supported_length": closest_length,
-            "valid": len(invalid_chars) == 0 and is_supported_length,
-        }
-
-        if not validation_result["valid"]:
-            error_msg = []
-            if invalid_chars:
-                error_msg.append(f"Invalid characters found: {invalid_chars}")
-            if not is_supported_length:
-                error_msg.append(
-                    f"Unsupported length {length}, closest supported: {closest_length}"
-                )
-            raise ValueError("; ".join(error_msg))
-
-        return validation_result
-
-    def _save_track_data(self, track_data, output_type: str, base_filename: str) -> dict[str, str]:
-        """Save track data to multiple formats and return file paths."""
-        import numpy as np
-        import pandas as pd
-        import pyarrow as pa
-        import pyarrow.parquet as pq
-
-        # Create output filenames
-        npz_file = self.output_dir / f"{base_filename}_{output_type}.npz"
-        parquet_file = self.output_dir / f"{base_filename}_{output_type}.parquet"
-        plot_file = self.output_dir / f"{base_filename}_{output_type}_plot.png"
-
-        # Save track data as compressed numpy archive (for backward compatibility)
-        np.savez_compressed(
-            npz_file,
-            values=track_data.values,
-            metadata=track_data.metadata,
-            interval_chromosome=track_data.interval.chromosome
-            if track_data.interval
-            else None,
-            interval_start=track_data.interval.start if track_data.interval else None,
-            interval_end=track_data.interval.end if track_data.interval else None,
-            interval_strand=track_data.interval.strand.name
-            if track_data.interval
-            else None,
-        )
-
-        # Save as Apache Arrow/Parquet for modern data workflows
-        try:
-            # Convert values to DataFrame
-            if len(track_data.values.shape) == 1:
-                df_values = pd.DataFrame({f"{output_type}_signal": track_data.values})
-            else:
-                df_values = pd.DataFrame(track_data.values, 
-                                       columns=[f"{output_type}_track_{i}" for i in range(track_data.values.shape[1])])
-            
-            # Add position column
-            df_values['genomic_position'] = range(len(track_data.values))
-            
-            # Add metadata as columns if available
-            if hasattr(track_data, 'metadata') and track_data.metadata is not None:
-                try:
-                    # Try to convert metadata to a DataFrame and merge
-                    if hasattr(track_data.metadata, 'to_dict'):
-                        meta_dict = track_data.metadata.to_dict()
-                        for key, value in meta_dict.items():
-                            if isinstance(value, (list, tuple)) and len(value) == len(df_values):
-                                df_values[f"meta_{key}"] = value
-                except Exception:
-                    pass  # Skip metadata if it can't be merged
-            
-            # Add interval information
-            if track_data.interval:
-                df_values['chromosome'] = track_data.interval.chromosome
-                df_values['interval_start'] = track_data.interval.start
-                df_values['interval_end'] = track_data.interval.end
-                df_values['strand'] = track_data.interval.strand.name
-            
-            # Save as Parquet
-            table = pa.Table.from_pandas(df_values)
-            pq.write_table(table, parquet_file, compression='snappy')
-            
-        except Exception as e:
-            print(f"Warning: Could not save {output_type} as Parquet: {e}")
-
-        # Auto-generate visualization
-        plot_path = self._create_track_visualization(track_data, output_type, plot_file)
-
-        return {
-            "npz": str(npz_file),
-            "parquet": str(parquet_file),
-            "plot": plot_path
-        }
+    def _save_track_data(
+        self, track_data, output_type: str, base_filename: str
+    ) -> dict[str, str]:
+        """Save track data to multiple formats (delegate to core)."""
+        return self.core.save_track_data(track_data, output_type, base_filename)
 
     def _save_metadata(self, metadata: dict[str, Any], base_filename: str) -> str:
-        """Save metadata to a JSON file and return the file path."""
-        metadata_file = self.output_dir / f"{base_filename}_metadata.json"
+        """Save metadata to a JSON file (delegate to core)."""
+        return self.core.save_metadata(metadata, base_filename)
 
-        with open(metadata_file, "w") as f:
-            json.dump(metadata, f, indent=2, default=str)
-
-        return str(metadata_file)
-
-    def _create_track_visualization(self, track_data, output_type: str, plot_file: Path) -> str:
-        """Create a visualization for track data and save as PNG."""
-        import matplotlib.pyplot as plt
-        import numpy as np
-
-        try:
-            # Create figure
-            fig, ax = plt.subplots(figsize=(14, 8))
-            
-            # Get the data values
-            values = track_data.values
-            positions = np.arange(len(values))
-            
-            # Create appropriate visualization based on output type and data shape
-            if len(values.shape) == 1:
-                # Single track
-                ax.plot(positions, values, linewidth=1.5, label=f"{output_type} Signal")
-                ax.fill_between(positions, values, alpha=0.3)
-            else:
-                # Multiple tracks
-                colors = plt.cm.Set1(np.linspace(0, 1, min(values.shape[1], 8)))
-                for i in range(min(values.shape[1], 5)):  # Limit to 5 tracks for readability
-                    ax.plot(positions, values[:, i], linewidth=1.5, 
-                           label=f"{output_type} Track {i+1}", color=colors[i])
-            
-            # Styling
-            ax.set_title(f"AlphaGenome {output_type} Prediction")
-            ax.set_xlabel("Genomic Position (bp)")
-            ax.set_ylabel("Signal Intensity")
-            ax.legend()
-            ax.grid(True, alpha=0.3)
-            
-            # Add interval info if available
-            if hasattr(track_data, 'interval') and track_data.interval:
-                interval_info = f"{track_data.interval.chromosome}:{track_data.interval.start}-{track_data.interval.end}"
-                ax.text(0.02, 0.98, interval_info, transform=ax.transAxes, 
-                       verticalalignment='top', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
-            
-            # Add statistics
-            mean_val = np.mean(values)
-            max_val = np.max(values)
-            min_val = np.min(values)
-            stats_text = f"Mean: {mean_val:.3f}\nMax: {max_val:.3f}\nMin: {min_val:.3f}"
-            ax.text(0.98, 0.98, stats_text, transform=ax.transAxes, 
-                   verticalalignment='top', horizontalalignment='right',
-                   bbox=dict(boxstyle='round', facecolor='lightblue', alpha=0.8))
-            
-            plt.tight_layout()
-            
-            # Save the plot
-            plt.savefig(plot_file, dpi=300, bbox_inches='tight', 
-                       facecolor='white', edgecolor='none')
-            plt.close(fig)
-            
-            return str(plot_file)
-            
-        except Exception as e:
-            print(f"Warning: Could not create visualization for {output_type}: {e}")
-            return ""
+    def _create_track_visualization(
+        self, track_data, output_type: str, plot_file: Path
+    ) -> str:
+        """Create a visualization for track data (delegate to core)."""
+        return self.core.create_track_visualization(track_data, output_type, plot_file)
 
     def _register_alphagenome_tools(self):
         """Register AlphaGenome-specific tools."""
@@ -673,7 +517,7 @@ class AlphaGenomeMCP(FastMCP):
         COORDINATE SYSTEM:
         - Uses 0-based, half-open intervals [start, end)
         - start: inclusive 0-based position
-        - end: exclusive 0-based position  
+        - end: exclusive 0-based position
         - Interval length = end - start
         - Example: chr1:1000-2000 → start=999, end=2000 (1000bp interval)
 
@@ -939,7 +783,7 @@ class AlphaGenomeMCP(FastMCP):
 
         SCORING ALGORITHMS (when available):
         - Pathogenicity prediction: Likelihood of disease-causing effects
-        - Conservation scoring: Evolutionary constraint assessment  
+        - Conservation scoring: Evolutionary constraint assessment
         - Functional impact: Regulatory and transcriptional effects
         - Tissue-specific effects: Context-dependent impact quantification
         - Splice site disruption: Effects on RNA splicing patterns
@@ -1129,25 +973,25 @@ class AlphaGenomeMCP(FastMCP):
 
         COMPREHENSIVE OUTPUT CATALOG:
         Returns structured information for each supported output type:
-        
+
         EXPRESSION & TRANSCRIPTION:
         - RNA_SEQ: RNA sequencing gene expression tracks
         - CAGE: Cap Analysis Gene Expression (transcription start sites)
         - PROCAP: Precision Run-On sequencing and capping
-        
+
         CHROMATIN ACCESSIBILITY:
         - DNASE: DNase I hypersensitive sites
         - ATAC: Assay for Transposase-Accessible Chromatin
-        
+
         PROTEIN-DNA INTERACTIONS:
         - CHIP_HISTONE: ChIP-seq histone modification tracks
         - CHIP_TF: ChIP-seq transcription factor binding sites
-        
+
         RNA PROCESSING:
         - SPLICE_SITES: Splice donor and acceptor site predictions
         - SPLICE_SITE_USAGE: Quantitative splice site usage
         - SPLICE_JUNCTIONS: RNA-seq splice junction tracks
-        
+
         3D GENOME ORGANIZATION:
         - CONTACT_MAPS: Chromatin interaction contact frequency maps
 
@@ -1191,16 +1035,16 @@ class AlphaGenomeMCP(FastMCP):
         Retrieve information about organisms supported by AlphaGenome models.
 
         SUPPORTED ORGANISMS:
-        
+
         HOMO_SAPIENS (Human):
         - Reference genome: GRCh38/hg38
         - Chromosomes: chr1-chr22, chrX, chrY, chrM
         - Comprehensive training data from diverse tissues/cell types
         - Extensive validation on clinical and population genetics datasets
         - Optimized for medical genomics and variant interpretation
-        
+
         MUS_MUSCULUS (Mouse):
-        - Reference genome: GRCm39/mm39  
+        - Reference genome: GRCm39/mm39
         - Chromosomes: chr1-chr19, chrX, chrY, chrM
         - Model organism with extensive experimental validation
         - Valuable for comparative genomics and model system studies
@@ -1281,18 +1125,22 @@ class AlphaGenomeMCP(FastMCP):
         """,
         )
         def visualize_prediction(request: VisualizationRequest) -> VisualizationResult:
-            import matplotlib.pyplot as plt
-            import numpy as np
             import base64
             from io import BytesIO
 
-            with start_action(action_type="visualize_prediction", plot_type=request.plot_type):
+            import matplotlib.pyplot as plt
+            import numpy as np
+
+            with start_action(
+                action_type="visualize_prediction", plot_type=request.plot_type
+            ):
                 # Create figure
                 fig, ax = plt.subplots(figsize=(request.width, request.height))
-                
+
                 plot_info = {
                     "plot_type": request.plot_type,
-                    "title": request.title or f"AlphaGenome {request.plot_type.title()} Plot",
+                    "title": request.title
+                    or f"AlphaGenome {request.plot_type.title()} Plot",
                     "width": request.width,
                     "height": request.height,
                     "timestamp": str(pd.Timestamp.now()),
@@ -1303,7 +1151,7 @@ class AlphaGenomeMCP(FastMCP):
                     ax.set_title(plot_info["title"])
                     ax.set_xlabel("Genomic Position")
                     ax.set_ylabel("Signal Intensity")
-                    
+
                     # Create example track data for demonstration
                     positions = np.arange(0, 1000)
                     signal = np.random.normal(0, 1, 1000).cumsum()
@@ -1314,36 +1162,50 @@ class AlphaGenomeMCP(FastMCP):
                 elif request.plot_type == "variant_comparison":
                     # Example variant comparison
                     ax.set_title(plot_info["title"])
-                    categories = ['Reference', 'Alternate']
+                    categories = ["Reference", "Alternate"]
                     values = [np.random.uniform(0.5, 1.0), np.random.uniform(0.3, 0.8)]
-                    colors = ['#1f77b4', '#ff7f0e']
-                    
+                    colors = ["#1f77b4", "#ff7f0e"]
+
                     bars = ax.bar(categories, values, color=colors)
                     ax.set_ylabel("Prediction Score")
                     ax.set_ylim(0, 1)
-                    
+
                     # Add value labels on bars
-                    for bar, value in zip(bars, values):
+                    for bar, value in zip(bars, values, strict=False):
                         height = bar.get_height()
-                        ax.text(bar.get_x() + bar.get_width()/2., height + 0.01,
-                               f'{value:.3f}', ha='center', va='bottom')
+                        ax.text(
+                            bar.get_x() + bar.get_width() / 2.0,
+                            height + 0.01,
+                            f"{value:.3f}",
+                            ha="center",
+                            va="bottom",
+                        )
 
                 elif request.plot_type == "contact_map":
                     # Example contact map
                     ax.set_title(plot_info["title"])
                     size = 50
                     contact_matrix = np.random.exponential(0.5, (size, size))
-                    contact_matrix = (contact_matrix + contact_matrix.T) / 2  # Make symmetric
-                    
-                    im = ax.imshow(contact_matrix, cmap='Reds', interpolation='nearest')
+                    contact_matrix = (
+                        contact_matrix + contact_matrix.T
+                    ) / 2  # Make symmetric
+
+                    im = ax.imshow(contact_matrix, cmap="Reds", interpolation="nearest")
                     ax.set_xlabel("Genomic Position (bins)")
                     ax.set_ylabel("Genomic Position (bins)")
                     plt.colorbar(im, ax=ax, label="Contact Frequency")
 
                 else:
                     # Default visualization
-                    ax.text(0.5, 0.5, f"Visualization type '{request.plot_type}' not implemented",
-                           ha='center', va='center', transform=ax.transAxes, fontsize=14)
+                    ax.text(
+                        0.5,
+                        0.5,
+                        f"Visualization type '{request.plot_type}' not implemented",
+                        ha="center",
+                        va="center",
+                        transform=ax.transAxes,
+                        fontsize=14,
+                    )
                     ax.set_title(plot_info["title"])
 
                 plt.tight_layout()
@@ -1352,34 +1214,47 @@ class AlphaGenomeMCP(FastMCP):
                 timestamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
                 filename = f"alphagenome_plot_{request.plot_type}_{timestamp}.png"
                 image_path = self.output_dir / filename
-                
+
                 # Save plot to file
-                plt.savefig(image_path, dpi=300, bbox_inches='tight', 
-                           facecolor='white', edgecolor='none')
-                
+                plt.savefig(
+                    image_path,
+                    dpi=300,
+                    bbox_inches="tight",
+                    facecolor="white",
+                    edgecolor="none",
+                )
+
                 # Optionally create base64 encoded image data
                 image_data = None
                 if True:  # Always create base64 for now
                     buf = BytesIO()
-                    plt.savefig(buf, format='png', dpi=150, bbox_inches='tight',
-                               facecolor='white', edgecolor='none')
+                    plt.savefig(
+                        buf,
+                        format="png",
+                        dpi=150,
+                        bbox_inches="tight",
+                        facecolor="white",
+                        edgecolor="none",
+                    )
                     buf.seek(0)
-                    image_data = base64.b64encode(buf.read()).decode('utf-8')
+                    image_data = base64.b64encode(buf.read()).decode("utf-8")
                     buf.close()
 
                 plt.close(fig)  # Free memory
 
-                plot_info.update({
-                    "image_path": str(image_path),
-                    "filename": filename,
-                    "file_size_mb": image_path.stat().st_size / (1024 * 1024),
-                    "dpi": 300,
-                })
+                plot_info.update(
+                    {
+                        "image_path": str(image_path),
+                        "filename": filename,
+                        "file_size_mb": image_path.stat().st_size / (1024 * 1024),
+                        "dpi": 300,
+                    }
+                )
 
                 return VisualizationResult(
                     image_data=image_data,
                     image_path=str(image_path),
-                    plot_info=plot_info
+                    plot_info=plot_info,
                 )
 
 

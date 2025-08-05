@@ -433,7 +433,7 @@ class TestFileOperations:
         npz_path = file_paths["npz"]
         assert Path(npz_path).exists()
         assert npz_path.endswith("_RNA_SEQ.npz")
-        
+
         loaded_data = np.load(npz_path, allow_pickle=True)
         np.testing.assert_array_equal(loaded_data["values"], track_data.values)
         assert list(loaded_data["metadata"]) == track_data.metadata
@@ -518,40 +518,42 @@ class TestVisualization:
 
     def test_create_tracks_visualization(self, mcp_server: AlphaGenomeMCP) -> None:
         """Test creating a tracks visualization plot."""
+
         import matplotlib.pyplot as plt
         import numpy as np
         import pandas as pd
-        from pathlib import Path
-        
+
         # Create figure like the tool does
         fig, ax = plt.subplots(figsize=(12, 6))
-        
+
         # Create track visualization
         ax.set_title("DNase-seq Signal Track")
         ax.set_xlabel("Genomic Position (bp)")
         ax.set_ylabel("DNase Signal")
-        
+
         # Create realistic genomic track data
         positions = np.arange(0, 2048)  # Match our test sequence length
         # Simulate DNase signal with some realistic characteristics
-        signal = np.random.gamma(2, 0.5, 2048)  # Gamma distribution for realistic signal
-        signal = np.convolve(signal, np.ones(10)/10, mode='same')  # Smooth the signal
-        
-        ax.plot(positions, signal, label="DNase-seq", linewidth=1.5, color='blue')
-        ax.fill_between(positions, signal, alpha=0.3, color='lightblue')
+        signal = np.random.gamma(
+            2, 0.5, 2048
+        )  # Gamma distribution for realistic signal
+        signal = np.convolve(signal, np.ones(10) / 10, mode="same")  # Smooth the signal
+
+        ax.plot(positions, signal, label="DNase-seq", linewidth=1.5, color="blue")
+        ax.fill_between(positions, signal, alpha=0.3, color="lightblue")
         ax.legend()
         ax.grid(True, alpha=0.3)
-        
+
         plt.tight_layout()
-        
+
         # Save the plot
         timestamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
         filename = f"test_tracks_plot_{timestamp}.png"
         image_path = mcp_server.output_dir / filename
-        
-        plt.savefig(image_path, dpi=300, bbox_inches='tight')
+
+        plt.savefig(image_path, dpi=300, bbox_inches="tight")
         plt.close()
-        
+
         # Verify the plot was created
         assert image_path.exists()
         assert image_path.stat().st_size > 10000  # Should be a reasonable size
@@ -562,50 +564,70 @@ class TestVisualization:
         import matplotlib.pyplot as plt
         import numpy as np
         import pandas as pd
-        
+
         # Create figure
         fig, ax = plt.subplots(figsize=(10, 6))
-        
+
         # Create variant comparison visualization
         ax.set_title("Variant Impact Comparison: chr22:36201698 A>C")
-        
+
         # Simulate prediction scores for reference vs alternate
-        output_types = ['RNA-seq', 'DNase', 'ATAC-seq', 'H3K27ac']
+        output_types = ["RNA-seq", "DNase", "ATAC-seq", "H3K27ac"]
         ref_scores = np.random.uniform(0.6, 0.9, len(output_types))
         alt_scores = ref_scores + np.random.normal(0, 0.15, len(output_types))
         alt_scores = np.clip(alt_scores, 0, 1)  # Keep in [0,1] range
-        
+
         x = np.arange(len(output_types))
         width = 0.35
-        
-        bars1 = ax.bar(x - width/2, ref_scores, width, label='Reference (A)', color='#1f77b4', alpha=0.8)
-        bars2 = ax.bar(x + width/2, alt_scores, width, label='Alternate (C)', color='#ff7f0e', alpha=0.8)
-        
-        ax.set_ylabel('Prediction Score')
-        ax.set_xlabel('Genomic Output Type')
-        ax.set_title('Variant Impact on Genomic Outputs')
+
+        bars1 = ax.bar(
+            x - width / 2,
+            ref_scores,
+            width,
+            label="Reference (A)",
+            color="#1f77b4",
+            alpha=0.8,
+        )
+        bars2 = ax.bar(
+            x + width / 2,
+            alt_scores,
+            width,
+            label="Alternate (C)",
+            color="#ff7f0e",
+            alpha=0.8,
+        )
+
+        ax.set_ylabel("Prediction Score")
+        ax.set_xlabel("Genomic Output Type")
+        ax.set_title("Variant Impact on Genomic Outputs")
         ax.set_xticks(x)
         ax.set_xticklabels(output_types)
         ax.legend()
         ax.set_ylim(0, 1)
-        
+
         # Add value labels on bars
         for bars in [bars1, bars2]:
             for bar in bars:
                 height = bar.get_height()
-                ax.text(bar.get_x() + bar.get_width()/2., height + 0.01,
-                       f'{height:.3f}', ha='center', va='bottom', fontsize=9)
-        
+                ax.text(
+                    bar.get_x() + bar.get_width() / 2.0,
+                    height + 0.01,
+                    f"{height:.3f}",
+                    ha="center",
+                    va="bottom",
+                    fontsize=9,
+                )
+
         plt.tight_layout()
-        
+
         # Save the plot
         timestamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
         filename = f"test_variant_comparison_{timestamp}.png"
         image_path = mcp_server.output_dir / filename
-        
-        plt.savefig(image_path, dpi=300, bbox_inches='tight')
+
+        plt.savefig(image_path, dpi=300, bbox_inches="tight")
         plt.close()
-        
+
         # Verify the plot was created
         assert image_path.exists()
         assert image_path.stat().st_size > 15000  # Should be a reasonable size
@@ -616,10 +638,10 @@ class TestVisualization:
         import matplotlib.pyplot as plt
         import numpy as np
         import pandas as pd
-        
+
         # Create figure
         fig, ax = plt.subplots(figsize=(8, 7))
-        
+
         # Create contact map
         size = 100
         # Create a realistic-looking contact map with distance decay
@@ -628,34 +650,40 @@ class TestVisualization:
             for j in range(size):
                 distance = abs(i - j)
                 # Contact frequency decreases with genomic distance
-                contact_matrix[i, j] = np.random.exponential(1.0) * np.exp(-distance/20.0)
-        
+                contact_matrix[i, j] = np.random.exponential(1.0) * np.exp(
+                    -distance / 20.0
+                )
+
         # Make it symmetric
         contact_matrix = (contact_matrix + contact_matrix.T) / 2
-        
+
         # Add some stronger diagonal interactions
-        for i in range(size-1):
-            contact_matrix[i, i+1] = contact_matrix[i+1, i] = np.random.uniform(2, 4)
-        
-        im = ax.imshow(contact_matrix, cmap='Reds', interpolation='nearest', origin='lower')
-        ax.set_xlabel('Genomic Position (10kb bins)')
-        ax.set_ylabel('Genomic Position (10kb bins)')
-        ax.set_title('Chromatin Contact Map: chr1:3,000,000-4,000,000')
-        
+        for i in range(size - 1):
+            contact_matrix[i, i + 1] = contact_matrix[i + 1, i] = np.random.uniform(
+                2, 4
+            )
+
+        im = ax.imshow(
+            contact_matrix, cmap="Reds", interpolation="nearest", origin="lower"
+        )
+        ax.set_xlabel("Genomic Position (10kb bins)")
+        ax.set_ylabel("Genomic Position (10kb bins)")
+        ax.set_title("Chromatin Contact Map: chr1:3,000,000-4,000,000")
+
         # Add colorbar
         cbar = plt.colorbar(im, ax=ax)
-        cbar.set_label('Contact Frequency', rotation=270, labelpad=20)
-        
+        cbar.set_label("Contact Frequency", rotation=270, labelpad=20)
+
         plt.tight_layout()
-        
+
         # Save the plot
         timestamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
         filename = f"test_contact_map_{timestamp}.png"
         image_path = mcp_server.output_dir / filename
-        
-        plt.savefig(image_path, dpi=300, bbox_inches='tight')
+
+        plt.savefig(image_path, dpi=300, bbox_inches="tight")
         plt.close()
-        
+
         # Verify the plot was created
         assert image_path.exists()
         assert image_path.stat().st_size > 20000  # Should be a reasonable size
@@ -666,55 +694,62 @@ class TestVisualization:
         import matplotlib.pyplot as plt
         import numpy as np
         import pandas as pd
-        
+
         # Look for actual prediction data files in test output
         output_dir = mcp_server.output_dir
         npz_files = list(output_dir.glob("**/*RNA_SEQ.npz"))
-        
+
         if npz_files:
             # Use actual prediction data
             data_file = npz_files[0]
             print(f"📊 Using actual prediction data from: {data_file}")
-            
+
             # Load the actual prediction data
             data = np.load(data_file, allow_pickle=True)
-            values = data['values']
-            
+            values = data["values"]
+
             # Create visualization
             fig, ax = plt.subplots(figsize=(14, 8))
-            
+
             # Plot the actual RNA-seq prediction
             if len(values.shape) == 2:
                 # Multi-track data
                 for i in range(min(values.shape[1], 3)):  # Show up to 3 tracks
-                    ax.plot(values[:, i], label=f'Track {i+1}', linewidth=1.5, alpha=0.8)
+                    ax.plot(
+                        values[:, i], label=f"Track {i + 1}", linewidth=1.5, alpha=0.8
+                    )
             else:
                 # Single track
-                ax.plot(values, label='RNA-seq Signal', linewidth=1.5)
-            
-            ax.set_title('Actual AlphaGenome RNA-seq Predictions')
-            ax.set_xlabel('Genomic Position (bp)')
-            ax.set_ylabel('Predicted RNA-seq Signal')
+                ax.plot(values, label="RNA-seq Signal", linewidth=1.5)
+
+            ax.set_title("Actual AlphaGenome RNA-seq Predictions")
+            ax.set_xlabel("Genomic Position (bp)")
+            ax.set_ylabel("Predicted RNA-seq Signal")
             ax.legend()
             ax.grid(True, alpha=0.3)
-            
+
             # Add some statistics
             mean_signal = np.mean(values)
             max_signal = np.max(values)
-            ax.text(0.02, 0.98, f'Mean: {mean_signal:.3f}\nMax: {max_signal:.3f}', 
-                   transform=ax.transAxes, verticalalignment='top',
-                   bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
-            
+            ax.text(
+                0.02,
+                0.98,
+                f"Mean: {mean_signal:.3f}\nMax: {max_signal:.3f}",
+                transform=ax.transAxes,
+                verticalalignment="top",
+                bbox={"boxstyle": "round", "facecolor": "wheat", "alpha": 0.8},
+            )
+
             plt.tight_layout()
-            
+
             # Save the plot
             timestamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
             filename = f"actual_prediction_data_{timestamp}.png"
             image_path = output_dir / filename
-            
-            plt.savefig(image_path, dpi=300, bbox_inches='tight')
+
+            plt.savefig(image_path, dpi=300, bbox_inches="tight")
             plt.close()
-            
+
             # Verify the plot was created
             assert image_path.exists()
             assert image_path.stat().st_size > 10000

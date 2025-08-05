@@ -21,7 +21,9 @@ dependencies = [
 ]
 
 [project.scripts]
-alphagenome-mcp = "alphagenome_mcp:main"
+alphagenome-mcp = "alphagenome_mcp.cli:app"
+alphagenome-mcp-start = "alphagenome_mcp.server:app"
+
 
 [build-system]
 requires = ["hatchling"]
